@@ -57,6 +57,35 @@ class TCPConnection
       error
     end
 
+  fun local_address(): net.NetAddress =>
+    """
+    Return the local IP address. If this TCPConnection is closed then the
+    address returned is invalid.
+    """
+    let ip = recover net.NetAddress end
+    @pony_os_sockname[Bool](fd, ip)
+    ip
+
+  fun remote_address(): net.NetAddress =>
+    """
+    Return the remote IP address. If this TCPConnection is closed then the
+    address returned is invalid.
+    """
+    let ip = recover net.NetAddress end
+    @pony_os_peername[Bool](fd, ip)
+    ip
+
+  fun ref set_keepalive(secs: U32) =>
+    """
+    Sets the TCP keepalive timeout to approximately `secs` seconds. Exact
+    timing is OS dependent. If `secs` is zero, TCP keepalive is disabled. TCP
+    keepalive is disabled by default. This can only be set on a connected
+    socket.
+    """
+    if is_open() then
+      @pony_os_keepalive[None](fd, secs)
+    end
+
   fun ref open() =>
     // TODO: should this be private? I think so.
     // I don't think the actor that is using the connection should
@@ -158,7 +187,8 @@ class TCPConnection
           while true do
             // Handle any data already in the read buffer
             while _there_is_buffered_read_data() do
-              let bytes_to_consume = if _expect == 0 then
+              let bytes_to_consume =
+                if _expect == 0 then
                 // if we aren't getting in `_expect` chunks,
                 // we should grab all the bytes that are currently available
                 _bytes_in_read_buffer
