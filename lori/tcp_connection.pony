@@ -1,4 +1,5 @@
 use "collections"
+use net="net"
 
 type OutgoingTCPAuth is (AmbientAuth |
   NetAuth |
